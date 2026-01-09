@@ -437,8 +437,21 @@ class TaskGenerator(BaseGenerator):
         temp_dir.mkdir(parents=True, exist_ok=True)
         video_path = temp_dir / f"{task_id}_ground_truth.mp4"
         
-        # Create animation frames
-        frames = self._create_animation_frames(task_data["specs"])
+        # Create animation frames with dynamic frame calculation
+        num_cards = len(task_data["specs"])
+        max_frames = int(self.config.max_video_duration * self.config.video_fps)
+        hold_frames = 3
+        # Calculate transition_frames to ensure video stays under max duration
+        # Total frames = 2 * hold_frames + num_cards * transition_frames
+        # transition_frames = (max_frames - 2 * hold_frames) / num_cards
+        available_frames = max_frames - 2 * hold_frames
+        transition_frames = max(10, int(available_frames / num_cards))
+        
+        frames = self._create_animation_frames(
+            task_data["specs"],
+            hold_frames=hold_frames,
+            transition_frames=transition_frames
+        )
         
         result = self.video_generator.create_video_from_frames(
             frames,
